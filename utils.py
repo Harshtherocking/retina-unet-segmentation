@@ -2,17 +2,18 @@ import os
 import torch 
 import torch.nn.functional as F
 
+
 def image_to_binary_mask(image: torch.Tensor) -> torch.Tensor:
     image = image.squeeze(0) 
-    channel_0 = (image == 0).float()  # Channel for pixels with value 0
-    channel_1 = (image == 255).float()  # Channel for pixels with value 255
+    channel_0 = (image == 0).float()# Channel for pixels with value 0
+    channel_1 = (image != 0).float() # Channel for pixels with value 255
 
     binary_mask = torch.stack([channel_0, channel_1], dim=0)
     return binary_mask
 
 def binary_mask_to_image(binary_mask: torch.Tensor) -> torch.Tensor:
     # Channel 0 contributes value 0, Channel 1 contributes value 255
-    reconstructed_image = binary_mask[1] * 255  
+    reconstructed_image = binary_mask[1].to(dtype=torch.uint8) * 255  
     return reconstructed_image.unsqueeze(0)  
 
 def next_power_of_2(x: int) -> int:

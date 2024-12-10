@@ -6,81 +6,110 @@ from utils import *
 from dataloader import ImageDataloader, PATH
 from unet import Unet
 
+from torchvision.io.image import write_png
+
+from torch.nn.functional import softmax
+
 from tqdm import tqdm
+import random
+
+random.seed(42)
+
+model_dir = os.path.join(os.getcwd(), "models")
+checkpoint_dir= os.path.join(os.getcwd(), "checkpoints")
+result_dir = os.path.join(os.getcwd(), "results")
+
+os.makedirs(model_dir, exist_ok=True)
+os.makedirs(checkpoint_dir, exist_ok=True)
+os.makedirs(result_dir, exist_ok=True)
 
 
-ModelDir = os.path.join(os.getcwd(), "models")
-CheckpointsDir = os.path.join(os.getcwd(), "checkpoints")
+device = torch.device("cuda:0" if torch.cuda.is_available() else "device")
+model = Unet(3,2).to(device)
 
-train_path = os.path.join(PATH , "ImageSets", "480p", "train.txt")
+optimizer = AdamW(model.parameters(), lr=0.01, amsgrad=True)
 
+loss_fn = torch.nn.CrossEntropyLoss()
 
+dataloader = ImageDataloader(path= PATH)
 
-def train(
-        train_path: str, 
-        num_epochs: int, 
-        optimizer: torch.optim.Optimizer, 
-        model: torch.nn.Module, 
-        model_dir: str, 
-        checkpoint_dir: str
-        ) -> torch.nn.Module:
-    
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "device")
-    model.to(device)
+# scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, "min", patience=5)
 
-    loss_fn = torch.nn.CrossEntropyLoss() 
+epochs = 1000
 
+torch.cuda.empty_cache()
 
-    os.makedirs(model_dir, exist_ok=True)
-    os.makedirs(checkpoint_dir, exist_ok=True)
+if __name__ == "__main__" :
 
-    dataloader = ImageDataloader(path= train_path)
+    for epoch in range(1, epochs + 1):
+        print(f"Epoch {epoch}/{epochs}... Training in progress.")
 
-    for epoch in range(1, num_epochs + 1):
-        print(f"Epoch {epoch}/{num_epochs}... Training in progress.")
-
-        for i in tqdm(range(len(dataloader))): 
-            x,y = dataloader[i]
+        # for i in tqdm(range(len(dataloader))): 
+        for i in range(0,1) : 
+            x,y = dataloader[56]
 
             x = x.to(device)
             y = y.to(device)
 
-            total_pixels = y.numel()
-            
+
             pred = model(x)
-            # print(f"{i}\tPred : \n{pred}")
 
             optimizer.zero_grad()
             loss = loss_fn(pred, y)
+
             loss.backward()
-            optimizer.step()
+
+            pred_softmax = softmax(pred,0).cpu()
+            image_pred_softmax = (pred_softmax[1,:,:].unsqueeze(0) * 255).to(dtype=torch.uint8)
+
             
-            print(f"{i + 1}\tLoss : {loss}\nAverage Loss per pixel : {loss/total_pixels}") if not i % 100 or i == len(dataloader) - 1 else None
+            write_png(image_pred_softmax, os.path.join(result_dir, f"epoch_{epoch}.png"))  
 
 
-        model_state = {
-            'epoch': epoch,
-            'model_state_dict': model.state_dict(),
-            'optimizer_state_dict': optimizer.state_dict(),
-            'loss': loss,
-        }
-        save_checkpoint(model_state, checkpoint_dir, f"checkpoint_epoch_{epoch}.pkl")
+            # with torch.no_grad():
+            #     for name, param in model.named_parameters():
+            #         print(f"{name} Gradient Norm: {param.grad.norm()}")
+            #         print(f"Before Step - {name}: {param}")
+                
+            #     optimizer.step()
+
+            #     for name, param in model.named_parameters():
+            #         print(f"After Step - {name}: {param}")
+
+            optimizer.step()
+            # scheduler.step(loss)
+            # print(f"last lr : {scheduler.get_last_lr()}")
+            
+            print(f"{i + 1}\tLoss : {loss}") if not i % 100 or i == len(dataloader) - 1 else None
+
+            # for i, para in enumerate(model.parameters()) : 
+            #     print(f"{i} : {id(para)}")
+
+            # print(model.parameters())
+            # for param in model.parameters() : 
+                # print(param.grad)
+
+            torch.cuda.empty_cache()
 
 
-        # Save the latest model after each epoch
-        torch.save(model.state_dict(), os.path.join(model_dir, "model_last.pkl"))
 
-        # Optionally save the best model based on validation performance (not implemented here)
-        # Example: if val_loss < best_loss: save_checkpoint(...)
+        # model_state = {
+        #     'epoch': epoch,
+        #     'model_state_dict': model.state_dict(),
+        #     'optimizer_state_dict': optimizer.state_dict(),
+        #     'loss': loss,
+        # }
+
+        # save_checkpoint(model_state, checkpoint_dir, f"checkpoint_epoch_{epoch}.pkl")
+
+        # torch.save(model.state_dict(), os.path.join(model_dir, "model_last.pkl"))
+
+        # # save image for each epoch 
+        # x, y = dataloader[random.randint(0,len(dataloader))]
+        # x = x.to(device)
+        # pred = model(x).cpu()
+        
+        torch.cuda.empty_cache()
+
 
     print("Training completed.")
-    return model
-
-
-
-if __name__ == "__main__" :
-    unet = Unet(3,2)
-    adam = AdamW(unet.parameters(), lr=0.01, amsgrad= True)
-    epochs = 5
-
-    train (train_path, epochs, adam, unet, ModelDir, CheckpointsDir)
