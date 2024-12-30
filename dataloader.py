@@ -7,7 +7,7 @@ from torch.utils.data import Dataset
 from utils import *
  
 
-PATH = os.path.join(os.getcwd() , "Retina", "train")
+PATH = os.path.join(os.getcwd() , "Retina")
 
 class ImageDataset (Dataset): 
     def __init__(self, path : str) -> None:
@@ -33,7 +33,8 @@ class ImageDataset (Dataset):
 
 if __name__ == "__main__": 
 
-    loader = ImageDataset(PATH)
+    path = os.path.join(PATH, "train")
+    loader = ImageDataset(path)
     l = len(loader)
     x,y = loader[0]
 

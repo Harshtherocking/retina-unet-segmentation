@@ -29,7 +29,7 @@ optimizer = AdamW(model.parameters(), lr=0.001, amsgrad=True)
 
 loss_fn = torch.nn.CrossEntropyLoss()
 
-ds= ImageDataset(path= PATH)
+ds= ImageDataset(path= os.path.join(PATH, "train"))
 
 dl = DataLoader(ds, batch_size=2, pin_memory= True, num_workers= 4)
 

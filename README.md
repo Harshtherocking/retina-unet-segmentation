@@ -1,7 +1,7 @@
 # Unet for image segmentaion 
 ### Dataset :
-[Kaggle-Retina-Dataset](https://www.kaggle.com/datasets/abdallahwagih/retina-blood-vessel)  
-
-### Sample data : 
-![imgage](./src/img.png)
+![original](./src/img.png)
 ![mask](./src/mask.png)
+### result using cross entropy loss : 
+
+./src/unet_cross_entropy.mkv
