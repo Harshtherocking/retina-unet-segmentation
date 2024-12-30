@@ -5,11 +5,12 @@ import torch.nn.functional as F
 
 def image_to_binary_mask(image: torch.Tensor) -> torch.Tensor:
     image = image.squeeze(0) 
-    channel_0 = (image == 0).float()# Channel for pixels with value 0
-    channel_1 = (image != 0).float() # Channel for pixels with value 255
+    channel_0 = (image == 0)
+    channel_1 = (image != 0)
+    return channel_1
 
-    binary_mask = torch.stack([channel_0, channel_1], dim=0)
-    return binary_mask
+    # binary_mask = torch.stack([channel_0, channel_1], dim=0)
+    # return binary_mask
 
 def binary_mask_to_image(binary_mask: torch.Tensor) -> torch.Tensor:
     # Channel 0 contributes value 0, Channel 1 contributes value 255
@@ -55,7 +56,7 @@ def load_checkpoint(dir_path: str, filename: str) -> dict:
 
 def uint8_to_float32(image: torch.Tensor) -> torch.Tensor:
     assert image.dtype == torch.uint8, "Input tensor must be of dtype uint8."
-    return image.to(dtype=torch.float32) / 255.0
+    return image.to(dtype=torch.float32) / 225.0
 
 def float32_to_uint8(image: torch.Tensor) -> torch.Tensor:
     assert image.dtype == torch.float32, "Input tensor must be of dtype float32."
